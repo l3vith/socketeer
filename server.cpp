@@ -1,4 +1,5 @@
 #include <arpa/inet.h>
+#include <assert.h>
 #include <errno.h>
 #include <netinet/ip.h>
 #include <stdint.h>
@@ -16,6 +17,7 @@ static void die(const char *msg) {
 
 static void msg(const char *msg) { fprintf(stderr, "%s\n", msg); }
 
+// Depriciated Function : Scheduled Removal By Next Push
 static void do_something(int connfd) {
   char rbuf[64] = {};
   ssize_t n = read(connfd, rbuf, sizeof(rbuf) - 1);
@@ -27,6 +29,21 @@ static void do_something(int connfd) {
 
   char wbuf[] = "world";
   write(connfd, wbuf, strlen(wbuf));
+}
+
+static void one_request() {}
+
+static int32_t read_full(int fd, char *buf, size_t n) {
+  while (n > 0) {
+    ssize_t rv = read(fd, buf, n);
+    if (rv <= 0) {
+      return -1;
+    }
+    assert((size_t)rv <= n);
+    n -= (size_t)rv;
+    buf += rv;
+  }
+  return 0;
 }
 
 int main() {
@@ -57,7 +74,12 @@ int main() {
       continue;
     }
 
-    do_something(connfd);
+    while (true) {
+      int32_t err = one_request(connfd);
+      if (err) {
+        break;
+      }
+    }
     close(connfd);
   }
 }
